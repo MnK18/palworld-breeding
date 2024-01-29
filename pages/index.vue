@@ -1,4 +1,5 @@
 <template>
+    <ColorMode class="dark:bg-gray-900" />
     <UCard class="w-full" :ui="{ base: '', ring: '', divide: 'divide-y divide-gray-200', header: { padding: 'px-4 py-5' }, body: { padding: '', base: 'divide-y divide-gray-200 dark:divide-gray-700' }, footer: { padding: 'p-4' } }">
       <template #header>
         <h2 class="font-semibold text-xl text-gray-900 dark:text-white leading-tight">
