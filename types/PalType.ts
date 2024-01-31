@@ -1,0 +1,34 @@
+export interface PalType {
+    number: String;
+    name: String;
+    power: Number;
+    type_1: String;
+    type_2: String;
+    is_nocturnal: String;
+    kindling: Number;
+    watering: Number;
+    planting: Number;
+    electric: Number;
+    handiwork: Number;
+    gathering: Number;
+    lumbering: Number;
+    mining: Number;
+    medicine: Number;
+    cooling: Number;
+    transporting: Number;
+    farming: Number;
+    food: Number;
+    hp: Number;
+    melee: Number;
+    shot: Number;
+    defence: Number;
+    price: Number;
+    stamina: Number;
+    walking: Number;
+    running: Number;
+    mounted: Number;
+    transporting_speed: Number;
+    capture_multi: Number;
+    male_chance: Number;
+  };
+  

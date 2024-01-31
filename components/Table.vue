@@ -46,6 +46,8 @@
             :columns="columnsTable"
             :rows="filteredRows"
             :loading="pending"
+            v-model:sort="sort"
+            sort-mode="manual"
             sort-asc-icon="i-heroicons-arrow-up"
             sort-desc-icon="i-heroicons-arrow-down"
             :ui="{ strategy: 'override' ,base: 'table-fixed', wrapper: 'relative overflow-x-auto max-w-full'}"
@@ -70,6 +72,7 @@
     
             <UPagination
                 v-model="page"
+                v-model:sort="sort"
                 :page-count="pageCount"
                 :total="pals.length"
                 :ui="{
@@ -91,129 +94,90 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import * as Realm from 'realm-web';
+import type { PalType } from '~/types/PalType';
+
+const sort = ref({ column: 'number', direction: 'asc' as const })
 
 // Define your composition function for asynchronous data fetching
-const { data: pals, } = useLazyAsyncData<{
-    number: string;
-    name: string;
-    power: number;
-    type_1: String;
-    type_2: String; 
-    is_nocturnal: String; 
-    kindling: Number; 
-    watering: Number; 
-    planting: Number; 
-    electric: Number; 
-    handiwork: Number; 
-    gathering: Number; 
-    lumbering: Number; 
-    mining: Number; 
-    medicine: Number; 
-    cooling: Number; 
-    transporting: Number; 
-    farming: Number; 
-    food: Number;
-    hp: Number; 
-    melee: Number; 
-    shot: Number; 
-    defence: Number; 
-    price: Number; 
-    stamina: Number; 
-    walking: Number; 
-    running: Number; 
-    mounted: Number; 
-    transporting_speed: Number; 
-    capture_multi: Number; 
-    male_chance: Number;
-  
-  }[]>('pals', async () => {
-    const app = new Realm.App({ id: 'data-itvjz' });
-    const credentials = Realm.Credentials.apiKey('fWgqvs2VeZMk0NQ5OFtg2nP5I3GBEoZi5ZrAcbLkPkchtmbASrYvkNkxivS2Banb');
-    await app.logIn(credentials);
-  
-    if (app.currentUser) {
-      const mongo = app.currentUser.mongoClient('Palworld');
-      const collection = mongo.db('palworld_db').collection('pal');
-      const results: 
-      { _id: string,
-        index: String,
-        name: String,
-        is_nocturnal: String,
-        kindling: Number,
-        watering: Number,
-        planting: Number,
-        electric: Number,
-        handiwork: Number,
-        gathering: Number,
-        lumbering: Number,
-        mining: Number,
-        medicine: Number,
-        cooling: Number,
-        transporting: Number,
-        farming: Number,
-        food: Number,
-        breed_power: String,
-        hp: String,
-        melee: String,
-        shot: String,
-        defence: String,
-        price: String,
-        stamina: String,
-        walking: String,
-        running: String,
-        mounted: String,
-        transporting_speed: String,
-        capture_multi: String,
-        male_chance: String,
-        }[] = await collection.find()
+const { data: pals, pending } = useLazyAsyncData<PalType[]>('pals', async () => {
+  const app = new Realm.App({ id: 'data-itvjz' });
+  const credentials = Realm.Credentials.apiKey('fWgqvs2VeZMk0NQ5OFtg2nP5I3GBEoZi5ZrAcbLkPkchtmbASrYvkNkxivS2Banb');
+  await app.logIn(credentials);
 
-      return results.map((result) => ({
-        number: result.index,
-        name: result.name,
-        power: result.breed_power,
-        type_1: result['type 1'],
-        type_2: result['type 2'],
-        is_nocturnal: result.is_nocturnal,
-        kindling: result.kindling,
-        watering: result.watering,
-        planting: result.planting,
-        electric: result.electric,
-        handiwork: result.handiwork,
-        gathering: result.gathering,
-        lumbering: result.lumbering,
-        mining: result.mining,
-        medicine: result.medicine,
-        cooling: result.cooling,
-        transporting: result.transporting,
-        farming: result.farming,
-        food: result.food,
-        hp: result.hp,
-        melee: result.melee,
-        shot: result.shot,
-        defence: result.defence,
-        price: result.price,
-        stamina: result.stamina,
-        walking: result.walking,
-        running: result.running,
-        mounted: result.mounted,
-        transporting_speed: result.transporting_speed,
-        capture_multi: result.capture_multi,
-        male_chance: result.male_chance,
-      }));
-    }
-  
-    return []; // Default value when data fetching fails or no data available
-  }, {
-    default: () => [],
-    watch: []
-  }); 
+  if (app.currentUser) {
+    const mongo = app.currentUser.mongoClient('Palworld');
+    const collection = mongo.db('palworld_db').collection('pal');
+    const results: any[] = await collection.find();
+
+    const sortedResults: PalType[] = results.map((result) => ({
+      number: result.index,
+      name: result.name,
+      power: result.breed_power,
+      type_1: result['type 1'],
+      type_2: result['type 2'],
+      is_nocturnal: result.is_nocturnal,
+      kindling: result.kindling,
+      watering: result.watering,
+      planting: result.planting,
+      electric: result.electric,
+      handiwork: result.handiwork,
+      gathering: result.gathering,
+      lumbering: result.lumbering,
+      mining: result.mining,
+      medicine: result.medicine,
+      cooling: result.cooling,
+      transporting: result.transporting,
+      farming: result.farming,
+      food: result.food,
+      hp: result.hp,
+      melee: result.melee,
+      shot: result.shot,
+      defence: result.defence,
+      price: result.price,
+      stamina: result.stamina,
+      walking: result.walking,
+      running: result.running,
+      mounted: result.mounted,
+      transporting_speed: result.transporting_speed,
+      capture_multi: result.capture_multi,
+      male_chance: result.male_chance,
+    }));
+
+    const sortedAndFilteredResults = sortedResults.sort((a, b) => {
+      const columnA = a[sort.value.column];
+      const columnB = b[sort.value.column];
+
+      // Convert the values to numbers for numeric columns
+      const numericA = typeof columnA === 'string' ? parseFloat(columnA) : columnA;
+      const numericB = typeof columnB === 'string' ? parseFloat(columnB) : columnB;
+
+      if (numericA < numericB) {
+        return sort.value.direction === 'asc' ? -1 : 1;
+      }
+      if (numericA > numericB) {
+        return sort.value.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+
+    return sortedAndFilteredResults;
+  }
+
+  // Default value when data fetching fails or no data available
+  return [];
+}, {
+  default: () => [],
+  watch: [sort],
+});
+
+
   
   const columns = [
-    { key: 'number', label: 'Number', sortable: false },
-    { key: 'name', label: 'Name', sortable: true },
-    { key: 'power', label: 'Breeding power', sortable: true },
-    {key: "type_1", label: "Type 1", sortable: true},
-    {key: "type_2", label: "Type 2", sortable: true},
+    { key: 'number', label: 'Number', sortable: true, },
+    { key: 'name', label: 'Name', sortable: true, class: 'String' },
+    { key: 'power', label: 'Breeding power', sortable: true, class: 'Number'},
+    {key: "type_1", label: "Type 1", sortable: true, class: 'String'},
+    {key: "type_2", label: "Type 2", sortable: true, class: 'String'},
     {key: "is_nocturnal", label: "Found at Night", sortable: true},
     {key: "kindling", label: "Kindling", sortable: true, class: 'Number'},
     {key: "watering", label: "Watering", sortable: true, class: 'Number'},
@@ -227,19 +191,19 @@ const { data: pals, } = useLazyAsyncData<{
     {key: "cooling", label: "Cooling", sortable: true, class: 'Number'},
     {key: "transporting", label: "Transporting", sortable: true, class: 'Number'},
     {key: "farming", label: "Farming", sortable: true, class: 'Number'},
-    {key: "food", label: "Food", sortable: true},
-    {key: "hp", label: "Health", sortable: true},
-    {key: "melee", label: "Melee Damage", sortable: true},
-    {key: "shot", label: "Ranged Damage", sortable: true},
-    {key: "defence", label: "Defence", sortable: true},
-    {key: "price", label: "Price", sortable: true},
-    {key: "stamina", label: "Stamina", sortable: true},
-    {key: "walking", label: "Walking", sortable: true},
-    {key: "running", label: "Running", sortable: true},
-    {key: "mounted", label: "Mounted", sortable: true},
-    {key: "transporting_speed", label: "Transporting Speed", sortable: true},
-    {key: "capture_multi", label: "Capture Multiple", sortable: true},
-    {key: "male_chance", label: "Male Chance (%)", sortable: true},
+    {key: "food", label: "Food", sortable: true, class: 'Number'},
+    {key: "hp", label: "Health", sortable: true, class: 'Number'},
+    {key: "melee", label: "Melee Damage", sortable: true, class: 'Number'},
+    {key: "shot", label: "Ranged Damage", sortable: true, class: 'Number'},
+    {key: "defence", label: "Defence", sortable: true, class: 'Number'},
+    {key: "price", label: "Price", sortable: true, class: 'Number'},
+    {key: "stamina", label: "Stamina", sortable: true, class: 'Number'},
+    {key: "walking", label: "Walking", sortable: true, class: 'Number'},
+    {key: "running", label: "Running", sortable: true, class: 'Number'},
+    {key: "mounted", label: "Mounted", sortable: true, class: 'Number'},
+    {key: "transporting_speed", label: "Transporting Speed", sortable: true, class: 'Number'},
+    {key: "capture_multi", label: "Capture Multiple", sortable: true, class: 'Number'},
+    {key: "male_chance", label: "Male Chance (%)", sortable: true, class: 'Number'},
   ];
   
   const selectedColumns = ref([...columns.slice(0, 18)]);
@@ -249,21 +213,19 @@ const { data: pals, } = useLazyAsyncData<{
   const items = ref([3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]);
   const pageCount = ref(15);
   
-  // const filteredRows = computed(() => {
-  //   const filtered = q.value
-  //     ? pals.value.filter((pal) =>
-  //         Object.values(pal).some((value) => String(value).toLowerCase().includes(q.value.toLowerCase()))
-  //       )
-  //     : pals.value;
+  const filteredRows = computed(() => {
+    const filtered = q.value
+      ? pals.value.filter((pal) =>
+          Object.values(pal).some((value) => String(value).toLowerCase().includes(q.value.toLowerCase()))
+        )
+      : pals.value;
   
-  //   const startIdx = (page.value - 1) * pageCount.value;
-  //   const endIdx = page.value * pageCount.value;
+    const startIdx = (page.value - 1) * pageCount.value;
+    const endIdx = page.value * pageCount.value;
   
-  //   return filtered.slice(startIdx, endIdx);
-  // });
+    return filtered.slice(startIdx, endIdx);
+  });
   
-  
-  const sort = ref({ column: 'name', direction: 'asc' });
   const pageFrom = computed(() => (page.value - 1) * pageCount.value + 1)
   
   const pageTo = computed(() => Math.min(page.value * pageCount.value, pageTotal.value))
@@ -271,41 +233,12 @@ const { data: pals, } = useLazyAsyncData<{
   
   });
 
+  const pageTotal = ref(filteredRows.value.length);
+
   const resetFilters = () => {
     q.value = '';
     selectedColumns.value = [...columns.slice(0, 18)];
     pageCount.value = 15;
   };
-
-
-  const sortedRows = computed(() => {
-    const sorted = pals.value.sort((a, b) => {
-      const column = sort.value.column;
-      const direction = sort.value.direction === 'asc' ? 1 : -1;
-
-      if (a[column] > b[column]) {
-        return direction;
-      } else if (a[column] < b[column]) {
-        return -direction;
-      } else {
-        return 0;
-      }
-    });
-
-  return q.value
-    ? sorted.filter((pal) =>
-        Object.values(pal).some((value) => String(value).toLowerCase().includes(q.value.toLowerCase()))
-      )
-    : sorted;
-});
-
-const pageTotal = ref(sortedRows.value.length);
-
-const filteredRows = computed(() => {
-  const startIdx = (page.value - 1) * pageCount.value;
-  const endIdx = page.value * pageCount.value;
-
-  return sortedRows.value.slice(startIdx, endIdx);
-});
 </script>
   
