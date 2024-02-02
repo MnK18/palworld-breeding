@@ -30,6 +30,13 @@
 </template>
 
 <script setup lang="ts">
+import { findCollection } from '~/services/mongodb';
+import type { PalType } from '~/types/PalType';
+import { palStore } from '~/store/palStore';
+import { storeToRefs } from 'pinia';
+
+const store = palStore();
+store.fetchPalData();
 
 const items = [{
   slot: 'table',

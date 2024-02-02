@@ -45,11 +45,11 @@
         <UTable
             :columns="columnsTable"
             :rows="filteredRows"
-            :loading="pending"
             v-model:sort="sort"
+            :loading="store.loading"
             sort-mode="manual"
-            sort-asc-icon="i-heroicons-arrow-up"
             sort-desc-icon="i-heroicons-arrow-down"
+            sort-asc-icon="i-heroicons-arrow-up"
             :ui="{ strategy: 'override' ,base: 'table-fixed', wrapper: 'relative overflow-x-auto max-w-full'}"
         >
         </UTable>
@@ -65,7 +65,7 @@
                 to
                 <span class="font-medium">{{ pageTo }}</span>
                 of
-                <span class="font-medium">{{ pals.length }}</span>
+                <span class="font-medium">{{ filteredRows.length }}</span>
                 results
                 </span>
             </div>
@@ -74,7 +74,7 @@
                 v-model="page"
                 v-model:sort="sort"
                 :page-count="pageCount"
-                :total="pals.length"
+                :total="filteredRows.length"
                 :ui="{
                 wrapper: 'flex items-center gap-1',
                 rounded: '!rounded-full min-w-[32px] justify-center',
@@ -90,92 +90,58 @@
     </div>
 </template>
 
-
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import * as Realm from 'realm-web';
-import type { PalType } from '~/types/PalType';
+import { ref, computed, watch } from 'vue';
+import { findCollection } from '~/services/mongodb';
+import { palStore } from '~/store/palStore';
 
-const sort = ref({ column: 'number', direction: 'asc' as const })
-
-// Define your composition function for asynchronous data fetching
-const { data: pals, pending } = useLazyAsyncData<PalType[]>('pals', async () => {
-  const app = new Realm.App({ id: 'data-itvjz' });
-  const credentials = Realm.Credentials.apiKey('fWgqvs2VeZMk0NQ5OFtg2nP5I3GBEoZi5ZrAcbLkPkchtmbASrYvkNkxivS2Banb');
-  await app.logIn(credentials);
-
-  if (app.currentUser) {
-    const mongo = app.currentUser.mongoClient('Palworld');
-    const collection = mongo.db('palworld_db').collection('pal');
-    const results: any[] = await collection.find();
-
-    const sortedResults: PalType[] = results.map((result) => ({
-      number: result.index,
-      name: result.name,
-      power: result.breed_power,
-      type_1: result['type 1'],
-      type_2: result['type 2'],
-      is_nocturnal: result.is_nocturnal,
-      kindling: result.kindling,
-      watering: result.watering,
-      planting: result.planting,
-      electric: result.electric,
-      handiwork: result.handiwork,
-      gathering: result.gathering,
-      lumbering: result.lumbering,
-      mining: result.mining,
-      medicine: result.medicine,
-      cooling: result.cooling,
-      transporting: result.transporting,
-      farming: result.farming,
-      food: result.food,
-      hp: result.hp,
-      melee: result.melee,
-      shot: result.shot,
-      defence: result.defence,
-      price: result.price,
-      stamina: result.stamina,
-      walking: result.walking,
-      running: result.running,
-      mounted: result.mounted,
-      transporting_speed: result.transporting_speed,
-      capture_multi: result.capture_multi,
-      male_chance: result.male_chance,
-    }));
-
-    const sortedAndFilteredResults = sortedResults.sort((a, b) => {
-      const columnA = a[sort.value.column];
-      const columnB = b[sort.value.column];
-
-      // Convert the values to numbers for numeric columns
-      const numericA = typeof columnA === 'string' ? parseFloat(columnA) : columnA;
-      const numericB = typeof columnB === 'string' ? parseFloat(columnB) : columnB;
-
-      if (numericA < numericB) {
-        return sort.value.direction === 'asc' ? -1 : 1;
-      }
-      if (numericA > numericB) {
-        return sort.value.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-
-    return sortedAndFilteredResults;
+const store = palStore();
+const sort = ref({ column: 'number', direction: 'asc' as const });
+store.loading = true;
+// Watch for changes in store.rows and trigger necessary updates
+watch(() => [store.rows, sort.value], async ([rows, sortValue]) => {
+  // Fetch data from your API or database if rows are not available
+  if (!rows) {
+    store.fetchPalData();
   }
 
-  // Default value when data fetching fails or no data available
-  return [];
-}, {
-  default: () => [],
-  watch: [sort],
-});
+  // Check if rows are available and not pending
+  if (rows && !store.loading) {
+    try {
+        store.loading = true;
+        const sortedAndFilteredResults = store.rows.sort((a, b) => {
+          const columnA = a[sort.value.column];
+          const columnB = b[sort.value.column];
 
+          // Convert the values to numbers for numeric columns
+          const numericA = typeof columnA === 'string' ? parseFloat(columnA) : columnA;
+          const numericB = typeof columnB === 'string' ? parseFloat(columnB) : columnB;
 
-  
-  const columns = [
+          // Handle cases where the property may be missing
+          if (numericA === undefined || isNaN(numericA)) {
+            return sort.value.direction === 'asc' ? 1 : -1;
+          }
+          if (numericB === undefined || isNaN(numericB)) {
+            return sort.value.direction === 'asc' ? -1 : 1;
+          }
+
+          if (numericA < numericB) {
+            return sort.value.direction === 'asc' ? -1 : 1;
+          }
+          if (numericA > numericB) {
+            return sort.value.direction === 'asc' ? 1 : -1;
+          }
+          return 0;
+        });
+      } finally {
+      store.loading = false;
+    }
+  }});
+
+const columns = [
     { key: 'number', label: 'Number', sortable: true, },
     { key: 'name', label: 'Name', sortable: true, class: 'String' },
-    { key: 'power', label: 'Breeding power', sortable: true, class: 'Number'},
+    { key: 'breed_power', label: 'Breeding power', sortable: true, class: 'Number'},
     {key: "type_1", label: "Type 1", sortable: true, class: 'String'},
     {key: "type_2", label: "Type 2", sortable: true, class: 'String'},
     {key: "is_nocturnal", label: "Found at Night", sortable: true},
@@ -205,40 +171,45 @@ const { data: pals, pending } = useLazyAsyncData<PalType[]>('pals', async () => 
     {key: "capture_multi", label: "Capture Multiple", sortable: true, class: 'Number'},
     {key: "male_chance", label: "Male Chance (%)", sortable: true, class: 'Number'},
   ];
-  
-  const selectedColumns = ref([...columns.slice(0, 18)]);
-  const columnsTable = computed(() => columns.filter((column) => selectedColumns.value.includes(column)))
-  const q = ref('');
-  const page = ref(1);
-  const items = ref([3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]);
-  const pageCount = ref(15);
-  
-  const filteredRows = computed(() => {
+
+const selectedColumns = ref([...columns.slice(0, 18)]);
+const columnsTable = computed(() => columns.filter((column) => selectedColumns.value.includes(column)))
+const q = ref('');
+const page = ref(1);
+const items = ref([3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]);
+const pageCount = ref(15);
+
+const filteredRows = computed(() => {
+  // Check if rows are available and not pending
+  if (store.rows) {
     const filtered = q.value
-      ? pals.value.filter((pal) =>
+      ? store.rows.filter((pal) =>
           Object.values(pal).some((value) => String(value).toLowerCase().includes(q.value.toLowerCase()))
         )
-      : pals.value;
-  
+      : store.rows;
+
     const startIdx = (page.value - 1) * pageCount.value;
     const endIdx = page.value * pageCount.value;
-  
+
     return filtered.slice(startIdx, endIdx);
-  });
-  
-  const pageFrom = computed(() => (page.value - 1) * pageCount.value + 1)
-  
-  const pageTo = computed(() => Math.min(page.value * pageCount.value, pageTotal.value))
-  onMounted(() => {
-  
-  });
+  } else {
+    // Return an empty array or handle the loading state accordingly
+    return [];
+  }
+});
 
-  const pageTotal = ref(filteredRows.value.length);
+const pageFrom = computed(() => (page.value - 1) * pageCount.value + 1);
+const pageTo = computed(() => Math.min(page.value * pageCount.value, pageTotal.value));
+const pageTotal = ref(filteredRows.value.length);
 
-  const resetFilters = () => {
-    q.value = '';
-    selectedColumns.value = [...columns.slice(0, 18)];
-    pageCount.value = 15;
-  };
+const resetFilters = () => {
+  q.value = '';
+  selectedColumns.value = [...columns.slice(0, 18)];
+  pageCount.value = 15;
+};
+
+// Fetch data on component mount
+onMounted(() => {
+  store.fetchPalData();
+});
 </script>
-  
