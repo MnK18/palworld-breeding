@@ -5,7 +5,7 @@ import type { PalType } from '~/types/PalType';
 
 const app = new Realm.App({ id: 'data-itvjz' });
 const credentials = Realm.Credentials.apiKey('fWgqvs2VeZMk0NQ5OFtg2nP5I3GBEoZi5ZrAcbLkPkchtmbASrYvkNkxivS2Banb');
-await app.logIn(credentials);
+app.logIn(credentials);
 const mongo = app.currentUser.mongoClient('Palworld');
 
 const collection = mongo.db('palworld_db').collection('pal');
