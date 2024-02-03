@@ -18,7 +18,11 @@ export const findChild = async <T>(dbName: string, collectionName: string, paren
     await app.logIn(credentials);
     const mongo = app.currentUser.mongoClient('Palworld');
     const collection = mongo.db(dbName).collection(collectionName);
-    console.log(parents['parent2']['value'],parents['parent1']['value'])
     const results: T[] = await collection.find({'parent1': parents['parent1']['value'], 'parent2': parents['parent2']['value']});
+    
+    if (results.length == 0) {
+        const results: T[] = await collection.find({'parent1': parents['parent2']['value'], 'parent2': parents['parent1']['value']});
+        return results;
+    }
     return results;
 }
