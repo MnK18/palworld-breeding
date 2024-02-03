@@ -35,8 +35,8 @@ import type { PalType } from '~/types/PalType';
 import { palStore } from '~/store/palStore';
 import { storeToRefs } from 'pinia';
 
-const store = palStore();
-store.fetchPalData();
+// const store = palStore();
+// store.fetchPalData();
 
 const items = [{
   slot: 'table',
