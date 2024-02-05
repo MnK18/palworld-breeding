@@ -65,7 +65,7 @@
                 to
                 <span class="font-medium">{{ pageTo }}</span>
                 of
-                <span class="font-medium">{{ filteredRows.length }}</span>
+                <span class="font-medium">{{ store.rows.length }}</span>
                 results
                 </span>
             </div>
@@ -74,7 +74,7 @@
                 v-model="page"
                 v-model:sort="sort"
                 :page-count="pageCount"
-                :total="filteredRows.length"
+                :total="store.rows.length"
                 :ui="{
                 wrapper: 'flex items-center gap-1',
                 rounded: '!rounded-full min-w-[32px] justify-center',
@@ -197,16 +197,20 @@ const filteredRows = computed(() => {
     return [];
   }
 });
+ 
 
 const pageFrom = computed(() => (page.value - 1) * pageCount.value + 1);
 const pageTo = computed(() => Math.min(page.value * pageCount.value, pageTotal.value));
-const pageTotal = ref(filteredRows.value.length);
-
+const pageTotal = ref(store.rows.length);
 const resetFilters = () => {
   q.value = '';
   selectedColumns.value = [...columns.slice(0, 18)];
   pageCount.value = 15;
 };
+console.log(filteredRows.value.length)
+watch(() => filteredRows.value, () => {
+  pageTotal.value = store.rows.length;
+});
 
 // Fetch data on component mount
 onMounted(() => {
