@@ -98,14 +98,11 @@ import { palStore } from '~/store/palStore';
 const store = palStore();
 const sort = ref({ column: 'number', direction: 'asc' as const });
 store.loading = true;
-// Watch for changes in store.rows and trigger necessary updates
 watch(() => [store.rows, sort.value], async ([rows, sortValue]) => {
-  // Fetch data from your API or database if rows are not available
   if (!rows) {
     store.fetchPalData();
   }
 
-  // Check if rows are available and not pending
   if (rows && !store.loading) {
     try {
         store.loading = true;
@@ -113,11 +110,9 @@ watch(() => [store.rows, sort.value], async ([rows, sortValue]) => {
           const columnA = a[sort.value.column];
           const columnB = b[sort.value.column];
 
-          // Convert the values to numbers for numeric columns
           const numericA = typeof columnA === 'string' ? parseFloat(columnA) : columnA;
           const numericB = typeof columnB === 'string' ? parseFloat(columnB) : columnB;
 
-          // Handle cases where the property may be missing
           if (numericA === undefined || isNaN(numericA)) {
             return sort.value.direction === 'asc' ? 1 : -1;
           }
@@ -180,7 +175,6 @@ const items = ref([3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]);
 const pageCount = ref(15);
 
 const filteredRows = computed(() => {
-  // Check if rows are available and not pending
   if (store.rows) {
     const filtered = q.value
       ? store.rows.filter((pal) =>
@@ -193,7 +187,6 @@ const filteredRows = computed(() => {
 
     return filtered.slice(startIdx, endIdx);
   } else {
-    // Return an empty array or handle the loading state accordingly
     return [];
   }
 });

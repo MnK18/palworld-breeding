@@ -5,10 +5,10 @@
         <UForm :validate="validateCalculator" :state="stateCalculator" class="space-y-4 items-center justify-center" @submit="onSubmitCalculator" @error="onError">
           <h1 class="text-center text-3xl font-bold py-3">Parent Breeding Discovery</h1>
           <div class="flex space-x-4">
-            <UFormGroup label="Parent 1" name="parent1">
+            <UFormGroup label="Parent 1" name="parent1" required>
               <USelectMenu v-model="stateCalculator.parent1" placeholder="Select..." :options="selectOptions" clear-search-on-close searchable searchable-placeholder="Search a pal..." class="me-2 w-36" />
             </UFormGroup>
-            <UFormGroup label="Parent 2" name="parent2">
+            <UFormGroup label="Parent 2" name="parent2" required>
               <USelectMenu v-model="stateCalculator.parent2" placeholder="Select..." :options="selectOptions" clear-search-on-close searchable searchable-placeholder="Search a pal..." :ui="{ width: 'w-auto' }" class="me-2 w-36" />
             </UFormGroup>
             <UButton type="submit" icon='i-heroicons-magnifying-glass-circle' variant="link" size="xl">Breed</UButton>
@@ -27,16 +27,35 @@
     </div>
     <UDivider orientation="vertical" class="w-1 pl-2 pr-6"  />
     <div class="max-h-[950px] overflow-y-auto hide-scrollbar flex flex-col  w-4/5 items-center">
-      <UForm :validate="validateMatrix" :state="stateMatrix" class="space-y-4 items-center justify-center" @submit="onSubmitMatrix" @error="onError">
-          <h1 class="text-center text-3xl font-bold py-3">Pal Breeding Matrix</h1>
-          <div class="flex space-x-4">
-            <UFormGroup label="Parent" name="parent">
-              <USelectMenu v-model="stateMatrix.parent" placeholder="Select..." :options="selectOptions" clear-search-on-close searchable searchable-placeholder="Search a pal..." class="me-2 w-36" />
-            </UFormGroup>
-            <UButton type="submit" icon='i-heroicons-magnifying-glass-circle' variant="link" size="xl">Show matrix</UButton>
+      <UTabs :items="items" class="w-full">
+        <template #breeding_matrix="{ item }">
+          <div class="overflow-y-auto hide-scrollbar flex flex-col items-center">
+            <UForm :validate="validateMatrix" :state="stateMatrix" class="space-y-4 items-center justify-center" @submit="onSubmitMatrix" @error="onError">
+              <div class="flex space-x-4">
+                <UFormGroup label="Parent" name="parent" required>
+                  <USelectMenu v-model="stateMatrix.parent" placeholder="Select..." :options="selectOptions" clear-search-on-close searchable searchable-placeholder="Search a pal..." class="me-2 w-36" />
+                </UFormGroup>
+                <UButton type="submit" icon='i-heroicons-magnifying-glass-circle' variant="link" size="xl">Show matrix</UButton>
+              </div>
+            </UForm>
+            <UTable class="items-center justify-center pt-3 w-full  hide-scrollbar" :rows="rowsMatrix" :columns="columnsMatrix" :loading="loadingMatrix" :emptyState="{icon: '', label: ''}" :ui="{'th': {'base': 'text-center'}, 'td': {'base': 'whitespace-nowrap text-center'}}" />
           </div>
-        </UForm>
-        <UTable class="items-center justify-center pt-3 w-full  hide-scrollbar" :rows="rowsMatrix" :columns="columnsMatrix" :loading="loadingMatrix" :emptyState="{icon: '', label: ''}" :ui="{'th': {'base': 'text-center'}, 'td': {'base': 'whitespace-nowrap text-center'}}" />
+        </template>
+
+        <template #find_parents="{ item }">
+          <div class="overflow-y-auto hide-scrollbar flex flex-col items-center">
+            <UForm :validate="validateFindParents" :state="stateFindParents" class="space-y-4 items-center justify-center" @submit="onSubmitFindParents" @error="onError">
+              <div class="flex space-x-4">
+                <UFormGroup label="Child" name="child" required>
+                  <USelectMenu v-model="stateFindParents.child" placeholder="Select..." :options="selectOptions" clear-search-on-close searchable searchable-placeholder="Search a pal..." class="me-2 w-36" />
+                </UFormGroup>
+                <UButton type="submit" icon='i-heroicons-magnifying-glass-circle' variant="link" size="xl">Show matrix</UButton>
+              </div>
+            </UForm>
+            <UTable class="items-center justify-center pt-3 w-full  hide-scrollbar" :rows="rowsFindParents" :columns="columnsFindParents" :loading="loadingFindParents" :emptyState="{icon: '', label: ''}" :ui="{'th': {'base': 'text-center'}, 'td': {'base': 'whitespace-nowrap text-center'}}" />
+          </div>
+        </template>
+      </UTabs>
     </div>
   </div>
 </template>
@@ -46,14 +65,18 @@
 <script setup lang="ts">
 import type { FormError, FormErrorEvent, FormSubmitEvent } from '#ui/types'
 import { palStore } from '~/store/palStore';
-import { findChild, getUniques, getMatrix } from '~/services/mongodb';
+import { findChild, getUniques, getMatrix, getParents} from '~/services/mongodb';
 import type { PalBreeding } from '~/types/PalBreeding'
 
 const rowsCalculator = ref<{child: String}[]>([])
 const rowsMatrix = ref<PalBreeding[]>([])
+const rowsFindParents = ref<PalBreeding[]>([])
 const loadingCalculator = ref<Boolean>(false)
 const loadingMatrix = ref<Boolean>(false)
+const loadingFindParents = ref<Boolean>(false)
+
 const store = palStore()
+
 const stateCalculator = reactive({
   parent1: undefined,
   parent2: undefined,
@@ -61,6 +84,10 @@ const stateCalculator = reactive({
 
 const stateMatrix = reactive({
   parent: undefined
+})
+
+const stateFindParents = reactive({
+  child: undefined
 })
 
 const columnsCalculator = [
@@ -79,9 +106,14 @@ const columnsMatrix = [
     {key: 'parent2', label: "Parent 2", sortable: true, class: "String"},
 ]
 
+const columnsFindParents = [
+    {key: 'parent1', label: "Parent 1", sortable: true, class: "String"},
+    {key: 'parent2', label: "Parent 2", sortable: true, class: "String"},
+]
+
 const selectOptions = store.rows.map((row) => ({
   label: row.name,
-  value: row.name, // You can use a different property based on what you want to set as the selected value
+  value: row.name,
 }));
 
 
@@ -95,6 +127,12 @@ const validateCalculator = (stateCalculator: any): FormError[] => {
 const validateMatrix = (stateCalculator: any): FormError[] => {
   const errors = []
   if (!stateCalculator.parent) errors.push({ path: 'parent', message: 'Required' })
+  return errors
+}
+
+const validateFindParents = (stateCalculator: any): FormError[] => {
+  const errors = []
+  if (!stateCalculator.child) errors.push({ path: 'child', message: 'Required' })
   return errors
 }
 
@@ -112,6 +150,13 @@ async function onSubmitMatrix (event: FormSubmitEvent<any>) {
   const reponse: PalBreeding[] = await getMatrix('palworld_db', 'pal_breeding', event.data)
   rowsMatrix.value = reponse;
   loadingMatrix.value = false;
+}
+
+async function onSubmitFindParents (event: FormSubmitEvent<any>) {
+  loadingFindParents.value = true;
+  const reponse: PalBreeding[] = await getParents('palworld_db', 'pal_breeding', event.data)
+  rowsFindParents.value = reponse;
+  loadingFindParents.value = false;
 }
 
 async function onError (event: FormErrorEvent) {
@@ -138,4 +183,12 @@ for (let i = 0; i < parent1Options.length && i < parent2Options.length; i++) {
   parentSets.push(combination2);
 }
 const rowUnuqies :PalBreeding[] = await getUniques('palworld_db', 'pal_breeding', parentSets);
+
+const items = [{
+  slot: 'breeding_matrix',
+  label: 'Pal Breeding Matrix'
+}, {
+  slot: 'find_parents',
+  label: 'Parent Breeding Discovery'
+}]
 </script>

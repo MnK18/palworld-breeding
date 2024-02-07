@@ -54,3 +54,14 @@ export const getMatrix = async <T>(dbName: string, collectionName: string, paren
     const results: T[] = await collection.find({ $or: [{ parent1: parent['parent']['value'] }, { parent2: parent['parent']['value'] }] });
     return results;
 }
+
+export const getParents = async <T>(dbName: string, collectionName: string, child: any[]): Promise<T[]> => {
+    const app = new Realm.App({ id: 'data-itvjz' });
+    const credentials = Realm.Credentials.apiKey('fWgqvs2VeZMk0NQ5OFtg2nP5I3GBEoZi5ZrAcbLkPkchtmbASrYvkNkxivS2Banb');
+    await app.logIn(credentials);
+    const mongo = app.currentUser.mongoClient('Palworld');
+    const collection = mongo.db(dbName).collection(collectionName);
+
+    const results: T[] = await collection.find({'child': child['child']['value']});
+    return results;
+}
