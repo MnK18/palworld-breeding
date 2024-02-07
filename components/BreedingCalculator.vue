@@ -49,7 +49,7 @@
                 <UFormGroup label="Child" name="child" required>
                   <USelectMenu v-model="stateFindParents.child" placeholder="Select..." :options="selectOptions" clear-search-on-close searchable searchable-placeholder="Search a pal..." class="me-2 w-36" />
                 </UFormGroup>
-                <UButton type="submit" icon='i-heroicons-magnifying-glass-circle' variant="link" size="xl">Show matrix</UButton>
+                <UButton type="submit" icon='i-heroicons-magnifying-glass-circle' variant="link" size="xl">Show parents</UButton>
               </div>
             </UForm>
             <UTable class="items-center justify-center pt-3 w-full  hide-scrollbar" :rows="rowsFindParents" :columns="columnsFindParents" :loading="loadingFindParents" :emptyState="{icon: '', label: ''}" :ui="{'th': {'base': 'text-center'}, 'td': {'base': 'whitespace-nowrap text-center'}}" />
