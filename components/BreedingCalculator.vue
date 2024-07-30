@@ -7,7 +7,7 @@
           <div class="flex space-x-4">
             <UFormGroup label="Parent 1" name="parent1" required>
               <USelectMenu v-model="stateCalculator.parent1" placeholder="Select..." :options="selectOptions" clear-search-on-close searchable searchable-placeholder="Search a pal..." class="me-2 w-36" />
-            </UFormGroup>
+            </UFormGroup> 
             <UFormGroup label="Parent 2" name="parent2" required>
               <USelectMenu v-model="stateCalculator.parent2" placeholder="Select..." :options="selectOptions" clear-search-on-close searchable searchable-placeholder="Search a pal..." :ui="{ width: 'w-auto' }" class="me-2 w-36" />
             </UFormGroup>
